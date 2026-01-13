@@ -447,4 +447,23 @@ export class MockNavigationClient {
       };
     }
   }
+
+
+  // 记录点击
+  async recordClick(id: number): Promise<boolean> {
+    await new Promise((resolve) => setTimeout(resolve, 100)); // 只有很短的延迟
+    // Mock不做任何事情
+    return true;
+  }
+
+  // 检查URL
+  async checkUrl(url: string): Promise<{ ok: boolean; status?: number; error?: string }> {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const isOk = Math.random() > 0.2; // 80% 成功率
+    return {
+      ok: isOk,
+      status: isOk ? 200 : 404,
+      error: isOk ? undefined : 'Mock Error'
+    };
+  }
 }

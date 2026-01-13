@@ -160,6 +160,37 @@ export default {
 
           const result = await api.deleteGroup(id);
           return Response.json({ success: result });
+          return Response.json({ success: result });
+        }
+        // 检查URL健康状态
+        else if (path === 'check-url' && method === 'GET') {
+          const targetUrl = url.searchParams.get('url');
+          if (!targetUrl) {
+            return Response.json({ error: '缺少URL参数' }, { status: 400 });
+          }
+
+          try {
+            const response = await fetch(targetUrl, {
+              method: 'HEAD',
+              headers: { 'User-Agent': 'NaviHive-HealthCheck/1.0' },
+              redirect: 'follow',
+              cf: {
+                cacheTtl: 60,
+                cacheEverything: true
+              }
+            });
+
+            return Response.json({
+              ok: response.ok,
+              status: response.status,
+              statusText: response.statusText
+            });
+          } catch (e) {
+            return Response.json({
+              ok: false,
+              error: e instanceof Error ? e.message : '检查失败'
+            }, { status: 500 }); // 或200返回具体错误，视前端逻辑而定
+          }
         }
         // 站点相关API
         else if (path === 'sites' && method === 'GET') {
@@ -238,7 +269,17 @@ export default {
 
           const result = await api.deleteSite(id);
           return Response.json({ success: result });
+        } else if (path.startsWith('sites/') && path.endsWith('/click') && method === 'POST') {
+          const match = path.match(/^sites\/(\d+)\/click$/);
+          if (!match) {
+            return Response.json({ error: '无效的ID' }, { status: 400 });
+          }
+          const id = parseInt(match[1]);
+          await api.recordClick(id);
+          return Response.json({ success: true });
         }
+
+        // 批量更新排序
 
         // 批量更新排序
         if (path === 'group-orders' && method === 'PUT') {

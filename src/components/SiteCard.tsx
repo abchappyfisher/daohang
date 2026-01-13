@@ -1,6 +1,7 @@
 // src/components/SiteCard.tsx
 import { useState, memo } from 'react';
 import { Site } from '../API/http';
+import { api } from '../API/instance';
 import SiteSettingsModal from './SiteSettingsModal';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -72,6 +73,10 @@ const SiteCard = memo(function SiteCard({
   // 处理卡片点击
   const handleCardClick = () => {
     if (!isEditMode && site.url) {
+      // 记录点击
+      if (site.id) {
+        api.recordClick(site.id).catch(err => console.error('Failed to record click', err));
+      }
       window.open(site.url, '_blank');
     }
   };
@@ -112,8 +117,8 @@ const SiteCard = memo(function SiteCard({
           boxShadow: isDragging ? 8 : 2,
           '&:hover': !isEditMode
             ? {
-                boxShadow: 5,
-              }
+              boxShadow: 5,
+            }
             : {},
           overflow: 'hidden',
           backgroundColor: (theme) =>

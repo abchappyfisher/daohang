@@ -9,6 +9,8 @@ import { sanitizeCSS, validateCSSUrl } from './utils/sanitizer';
 import { initCSRFToken } from './utils/csrf';
 import GroupCard from './components/GroupCard';
 import LoginForm from './components/LoginForm';
+import WeatherWidget from './components/WeatherWidget';
+import { parseBookmarksHtml } from './utils/bookmarkParser';
 import './App.css';
 import {
   DndContext,
@@ -57,6 +59,7 @@ import {
   Slider,
 } from '@mui/material';
 import SortIcon from '@mui/icons-material/Sort';
+import SearchIcon from '@mui/icons-material/Search';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
 import GitHubIcon from '@mui/icons-material/GitHub';
@@ -68,15 +71,11 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MenuIcon from '@mui/icons-material/Menu';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
-
-// 根据环境选择使用真实API还是模拟API
-const isDevEnvironment = import.meta.env.DEV;
-const useRealApi = import.meta.env.VITE_USE_REAL_API === 'true';
-
-const api =
-  isDevEnvironment && !useRealApi
-    ? new MockNavigationClient()
-    : new NavigationClient(isDevEnvironment ? 'http://localhost:8788/api' : '/api');
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import LoginIcon from '@mui/icons-material/Login';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { api } from './API/instance';
 
 // 排序模式枚举
 enum SortMode {
@@ -125,13 +124,120 @@ function App() {
   });
 
   // 创建Material UI主题
-  const theme = useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode: darkMode ? 'dark' : 'light',
+  () =>
+    createTheme({
+      typography: {
+        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+        h6: {
+          fontWeight: 600,
         },
-      }),
+        button: {
+          textTransform: 'none',
+          fontWeight: 500,
+        },
+      },
+      shape: {
+        borderRadius: 16,
+      },
+      palette: {
+        mode: darkMode ? 'dark' : 'light',
+        primary: {
+          main: darkMode ? '#818cf8' : '#6366f1', // Indigo
+        },
+        secondary: {
+          main: darkMode ? '#fbbf24' : '#f59e0b', // Amber
+        },
+        background: {
+          default: 'transparent',
+          paper: darkMode ? 'rgba(30, 41, 59, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+        },
+      },
+      components: {
+        MuiCssBaseline: {
+          styleOverrides: {
+            body: {
+              scrollbarColor: '#6b7280 transparent',
+              '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
+                backgroundColor: 'transparent',
+              },
+              '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
+                borderRadius: 8,
+                backgroundColor: '#6b7280',
+                minHeight: 24,
+                border: '3px solid transparent',
+                backgroundClip: 'content-box',
+              },
+              '&::-webkit-scrollbar-thumb:focus, & *::-webkit-scrollbar-thumb:focus': {
+                backgroundColor: '#9ca3af',
+              },
+              '&::-webkit-scrollbar-thumb:active, & *::-webkit-scrollbar-thumb:active': {
+                backgroundColor: '#9ca3af',
+              },
+              '&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover': {
+                backgroundColor: '#9ca3af',
+              },
+            },
+          },
+        },
+        MuiPaper: {
+          styleOverrides: {
+            root: {
+              backgroundImage: 'none',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: darkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.5)',
+              boxShadow: darkMode ? '0 4px 6px -1px rgba(0, 0, 0, 0.5)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              transition: 'box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out',
+            },
+          },
+        },
+        MuiDialog: {
+          styleOverrides: {
+            paper: {
+              borderRadius: 24,
+              boxShadow: darkMode ? '0 25px 50px -12px rgba(0, 0, 0, 0.7)' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            },
+          },
+        },
+        MuiButton: {
+          styleOverrides: {
+            root: {
+              borderRadius: 12,
+              boxShadow: 'none',
+              '&:hover': {
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              },
+            },
+            containedPrimary: {
+              background: darkMode ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
+            }
+          },
+        },
+        MuiTextField: {
+          styleOverrides: {
+            root: {
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 12,
+                backgroundColor: darkMode ? 'rgba(0, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.5)',
+                '& fieldset': {
+                  borderColor: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                },
+                '&:hover fieldset': {
+                  borderColor: darkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+                },
+              },
+            },
+          },
+        },
+        MuiMenu: {
+          styleOverrides: {
+            paper: {
+              borderRadius: 16,
+            }
+          }
+        }
+      },
+    }),
     [darkMode]
   );
 
@@ -158,6 +264,9 @@ function App() {
   const [configs, setConfigs] = useState<Record<string, string>>(DEFAULT_CONFIGS);
   const [openConfig, setOpenConfig] = useState(false);
   const [tempConfigs, setTempConfigs] = useState<Record<string, string>>(DEFAULT_CONFIGS);
+
+  // 搜索状态
+  const [searchTerm, setSearchTerm] = useState('');
 
   // 配置传感器，支持鼠标、触摸和键盘操作
   const sensors = useSensors(
@@ -422,6 +531,39 @@ function App() {
       setLoading(false);
     }
   };
+
+
+  // 过滤分组和站点
+  const filteredGroups = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return groups;
+    }
+
+    const lowerTerm = searchTerm.toLowerCase();
+    return groups
+      .map((group) => {
+        // 如果分组名称匹配，显示整个分组
+        if (group.name.toLowerCase().includes(lowerTerm)) {
+          return group;
+        }
+
+        // 否则过滤站点
+        const filteredSites = group.sites.filter(
+          (site) =>
+            site.name.toLowerCase().includes(lowerTerm) ||
+            site.url.toLowerCase().includes(lowerTerm) ||
+            (site.description && site.description.toLowerCase().includes(lowerTerm))
+        );
+
+        // 如果有匹配的站点，返回包含这些站点的分组
+        if (filteredSites.length > 0) {
+          return { ...group, sites: filteredSites };
+        }
+
+        return null;
+      })
+      .filter((group): group is GroupWithSites => group !== null);
+  }, [groups, searchTerm]);
 
   // 更新站点
   const handleSiteUpdate = async (updatedSite: Site) => {
@@ -744,7 +886,19 @@ function App() {
             throw new Error('读取文件失败');
           }
 
-          const importData = JSON.parse(e.target.result as string);
+          let importData;
+          const fileContent = e.target.result as string;
+
+          // 根据文件类型或者是内容判断
+          if (importFile.name.endsWith('.html') || importFile.name.endsWith('.htm') || fileContent.trim().startsWith('<!DOCTYPE NETSCAPE-Bookmark-file-1>')) {
+            try {
+              importData = parseBookmarksHtml(fileContent);
+            } catch (err) {
+              throw new Error('解析书签文件失败: ' + (err instanceof Error ? err.message : '格式错误'));
+            }
+          } else {
+            importData = JSON.parse(fileContent);
+          }
 
           // 验证导入数据格式
           if (!importData.groups || !Array.isArray(importData.groups)) {
@@ -755,8 +909,9 @@ function App() {
             throw new Error('导入文件格式错误：缺少站点数据');
           }
 
-          if (!importData.configs || typeof importData.configs !== 'object') {
-            throw new Error('导入文件格式错误：缺少配置数据');
+          // 如果是HTML导入，configs可能为空，给个默认值
+          if (!importData.configs) {
+            importData.configs = configs;
           }
 
           // 调用API导入数据
@@ -956,8 +1111,8 @@ function App() {
                     theme.palette.mode === 'dark'
                       ? 'rgba(0, 0, 0, ' + (1 - Number(configs['site.backgroundOpacity'])) + ')'
                       : 'rgba(255, 255, 255, ' +
-                        (1 - Number(configs['site.backgroundOpacity'])) +
-                        ')',
+                      (1 - Number(configs['site.backgroundOpacity'])) +
+                      ')',
                   zIndex: 1,
                 },
               }}
@@ -984,18 +1139,21 @@ function App() {
               gap: { xs: 2, sm: 0 },
             }}
           >
-            <Typography
-              variant='h3'
-              component='h1'
-              fontWeight='bold'
-              color='text.primary'
-              sx={{
-                fontSize: { xs: '1.75rem', sm: '2.125rem', md: '3rem' },
-                textAlign: { xs: 'center', sm: 'left' },
-              }}
-            >
-              {configs['site.name']}
-            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: { xs: 'center', sm: 'flex-start' } }}>
+              <Typography
+                variant='h3'
+                component='h1'
+                fontWeight='bold'
+                color='text.primary'
+                sx={{
+                  fontSize: { xs: '1.75rem', sm: '2.125rem', md: '3rem' },
+                  textAlign: { xs: 'center', sm: 'left' },
+                }}
+              >
+                {configs['site.name']}
+              </Typography>
+              <WeatherWidget />
+            </Box>
             <Stack
               direction={{ xs: 'row', sm: 'row' }}
               spacing={{ xs: 1, sm: 2 }}
@@ -1101,538 +1259,639 @@ function App() {
                         <FileUploadIcon fontSize='small' />
                       </ListItemIcon>
                       <ListItemText>导入数据</ListItemText>
-                    </MenuItem>
-                    {isAuthenticated && (
-                      <>
-                        <Divider />
-                        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-                          <ListItemIcon sx={{ color: 'error.main' }}>
-                            <LogoutIcon fontSize='small' />
-                          </ListItemIcon>
-                          <ListItemText>退出登录</ListItemText>
-                        </MenuItem>
-                      </>
-                    )}
-                  </Menu>
-                </>
-              )}
-              <ThemeToggle darkMode={darkMode} onToggle={toggleTheme} />
-            </Stack>
-          </Box>
-
-          {loading && (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '200px',
-              }}
-            >
-              <CircularProgress size={60} thickness={4} />
-            </Box>
-          )}
-
-          {!loading && !error && (
-            <Box
-              sx={{
-                '& > *': { mb: 5 },
-                minHeight: '100px',
-              }}
-            >
-              {sortMode === SortMode.GroupSort ? (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={groups.map((group) => group.id.toString())}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <Stack
-                      spacing={2}
-                      sx={{
-                        '& > *': {
-                          transition: 'none',
-                        },
+                      onClose={() => setMenuAnchorEl(null)}
+                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                      PaperProps={{
+                        elevation: 0,
+                        sx: {
+                          mt: 1.5,
+                          overflow: 'visible',
+                          filter: 'drop-shadow(0px 10px 30px rgba(0,0,0,0.15))',
+                          '&:before': { // Triangle pointer
+                            content: '""',
+                            display: 'block',
+                            position: 'absolute',
+                            top: 0,
+                            right: 20,
+                            width: 10,
+                            height: 10,
+                            bgcolor: 'background.paper',
+                            transform: 'translateY(-50%) rotate(45deg)',
+                            zIndex: 0,
+                          },
+                        }
                       }}
-                    >
-                      {groups.map((group) => (
-                        <SortableGroupItem key={group.id} id={group.id.toString()} group={group} />
-                      ))}
-                    </Stack>
-                  </SortableContext>
-                </DndContext>
-              ) : (
-                <Stack spacing={5}>
-                  {groups.map((group) => (
-                    <GroupCard
-                      key={`group-${group.id}`}
-                      group={group}
-                      sortMode={sortMode === SortMode.None ? 'None' : 'SiteSort'}
-                      currentSortingGroupId={currentSortingGroupId}
-                      onUpdate={handleSiteUpdate}
-                      onDelete={handleSiteDelete}
-                      onSaveSiteOrder={handleSaveSiteOrder}
-                      onStartSiteSort={startSiteSort}
-                      onAddSite={handleOpenAddSite}
-                      onUpdateGroup={handleGroupUpdate}
-                      onDeleteGroup={handleGroupDelete}
-                      configs={configs}
-                    />
-                  ))}
+               >
+                      {sortMode === SortMode.None ? (
+                        <MenuItem onClick={() => { setSortMode(SortMode.GroupSort); setMenuAnchorEl(null); }}>
+                          <ListItemIcon><SortIcon fontSize="small" /></ListItemIcon>
+                          编辑排序
+                        </MenuItem>
+                      ) : (
+                        <MenuItem onClick={() => { setSortMode(SortMode.None); setMenuAnchorEl(null); }}>
+                          <ListItemIcon><CheckCircleIcon fontSize="small" color="success" /></ListItemIcon>
+                          完成排序
+                        </MenuItem>
+                      )}
+
+                      <MenuItem onClick={() => { setOpenConfig(true); setMenuAnchorEl(null); }}>
+                        <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
+                        全局设置
+                      </MenuItem>
+
+                      <Divider sx={{ my: 0.5 }} />
+
+                      <MenuItem onClick={() => {
+                        // Check login for export/import if needed, or just allow
+                        const dataStr = JSON.stringify({ groups, configs }, null, 2);
+                        const blob = new Blob([dataStr], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `navihive_backup_${new Date().toISOString().split('T')[0]}.json`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        setMenuAnchorEl(null);
+                      }}>
+                        <ListItemIcon><FileDownloadIcon fontSize="small" /></ListItemIcon>
+                        导出数据
+                      </MenuItem>
+
+                      <MenuItem onClick={() => { setOpenImport(true); setMenuAnchorEl(null); }}>
+                        <ListItemIcon><FileUploadIcon fontSize="small" /></ListItemIcon>
+                        导入数据
+                      </MenuItem>
+
+                      <Divider sx={{ my: 0.5 }} />
+
+                      <MenuItem>
+                        <ListItemIcon>
+                          {darkMode ? <Brightness7Icon fontSize="small" /> : <Brightness4Icon fontSize="small" />}
+                        </ListItemIcon>
+                        <ListItemText isInset={false} primary="深色模式" />
+                        <ThemeToggle isMobile={false} />{/* Simplified toggle integration */}
+                      </MenuItem>
+
+                      {isAuthenticated ? (
+                        <MenuItem onClick={() => { handleLogout(); setMenuAnchorEl(null); }}>
+                          <ListItemIcon><LogoutIcon fontSize="small" color="error" /></ListItemIcon>
+                          <Typography color="error">退出登录</Typography>
+                        </MenuItem>
+                      ) : (
+                        <MenuItem onClick={() => { /* Handle login open if separate */ setMenuAnchorEl(null); }}>
+                          <ListItemIcon><LoginIcon fontSize="small" color="primary" /></ListItemIcon>
+                          <Typography color="primary">管理员登录</Typography>
+                        </MenuItem>
+                      )}
+                  </Menu>
+
                 </Stack>
-              )}
-            </Box>
-          )}
+            </Stack>
 
-          {/* 新增分组对话框 */}
-          <Dialog
-            open={openAddGroup}
-            onClose={handleCloseAddGroup}
-            maxWidth='md'
-            fullWidth
-            PaperProps={{
-              sx: {
-                m: { xs: 2, sm: 3, md: 4 },
-                width: { xs: 'calc(100% - 32px)', sm: '80%', md: '70%', lg: '60%' },
-                maxWidth: { sm: '600px' },
-              },
-            }}
-          >
-            <DialogTitle>
-              新增分组
-              <IconButton
-                aria-label='close'
-                onClick={handleCloseAddGroup}
+            {/* 排序模式提示栏 */}
+            {sortMode !== SortMode.None && (
+              <Alert
+                severity='info'
+                sx={{ mb: 4, borderRadius: 3 }}
+                action={
+                  <Button color='inherit' size='small' onClick={() => setSortMode(SortMode.None)}>
+                    完成
+                  </Button>
+                }
+              >
+                {sortMode === SortMode.GroupSort ? '正在调整分组顺序 (拖拽调整)' : '正在调整站点顺序'}
+              </Alert>
+            )}
+
+            {loading && (
+              <Box
                 sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '200px',
                 }}
               >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText sx={{ mb: 2 }}>请输入新分组的信息</DialogContentText>
-              <TextField
-                autoFocus
-                margin='dense'
-                id='group-name'
-                name='name'
-                label='分组名称'
-                type='text'
-                fullWidth
-                variant='outlined'
-                value={newGroup.name}
-                onChange={handleGroupInputChange}
-                sx={{ mb: 2 }}
-              />
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 3 }}>
-              <Button onClick={handleCloseAddGroup} variant='outlined'>
-                取消
-              </Button>
-              <Button onClick={handleCreateGroup} variant='contained' color='primary'>
-                创建
-              </Button>
-            </DialogActions>
-          </Dialog>
+                <CircularProgress size={60} thickness={4} />
+              </Box>
+            )}
 
-          {/* 新增站点对话框 */}
-          <Dialog
-            open={openAddSite}
-            onClose={handleCloseAddSite}
-            maxWidth='md'
-            fullWidth
-            PaperProps={{
-              sx: {
-                m: { xs: 2, sm: 'auto' },
-                width: { xs: 'calc(100% - 32px)', sm: 'auto' },
-              },
-            }}
-          >
-            <DialogTitle>
-              新增站点
-              <IconButton
-                aria-label='close'
-                onClick={handleCloseAddSite}
+            {!loading && !error && (
+              <Box
                 sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
+                  '& > *': { mb: 5 },
+                  minHeight: '100px',
                 }}
               >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText sx={{ mb: 2 }}>请输入新站点的信息</DialogContentText>
-              <Stack spacing={2}>
-                <Box
+                {sortMode === SortMode.GroupSort ? (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={groups.map((group) => group.id.toString())}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <Stack
+                        spacing={2}
+                        sx={{
+                          '& > *': {
+                            transition: 'none',
+                          },
+                        }}
+                      >
+                        {filteredGroups.map((group) => (
+                          <SortableGroupItem
+                            key={group.id}
+                            id={group.id.toString()}
+                            group={group}
+                            isSorting={sortMode === SortMode.GroupSort}
+                            isSiteSorting={sortMode === SortMode.SiteSort && currentSortingGroupId === group.id}
+                            onEditGroup={handleOpenAddGroup} // 这里应该复用编辑逻辑，简化暂时指向打开新增
+                            onDeleteGroup={(id) => api.deleteGroup(id).then(fetchData)}
+                            onAddSite={handleOpenAddSite}
+                            onEditSite={handleSiteUpdate}
+                            onDeleteSite={handleSiteDelete}
+                            onStartSiteSort={startSiteSort}
+                            onSaveSiteOrder={handleSaveSiteOrder}
+                          />
+                        ))}
+                      </Stack>
+                    </SortableContext>
+                  </DndContext>
+                ) : (
+                  <Stack spacing={5}>
+                    {filteredGroups.map((group) => (
+                      <GroupCard
+                        key={`group-${group.id}`}
+                        group={group}
+                        sortMode={sortMode === SortMode.None ? 'None' : 'SiteSort'}
+                        currentSortingGroupId={currentSortingGroupId}
+                        onUpdate={handleSiteUpdate}
+                        onDelete={handleSiteDelete}
+                        onSaveSiteOrder={handleSaveSiteOrder}
+                        onStartSiteSort={startSiteSort}
+                        onAddSite={handleOpenAddSite}
+                        onUpdateGroup={handleGroupUpdate}
+                        onDeleteGroup={handleGroupDelete}
+                        configs={configs}
+                      />
+                    ))}
+                  </Stack>
+                )}
+              </Box>
+            )}
+
+            {/* 新增分组对话框 */}
+            <Dialog
+              open={openAddGroup}
+              onClose={handleCloseAddGroup}
+              maxWidth='md'
+              fullWidth
+              PaperProps={{
+                sx: {
+                  m: { xs: 2, sm: 3, md: 4 },
+                  width: { xs: 'calc(100% - 32px)', sm: '80%', md: '70%', lg: '60%' },
+                  maxWidth: { sm: '600px' },
+                },
+              }}
+            >
+              <DialogTitle>
+                新增分组
+                <IconButton
+                  aria-label='close'
+                  onClick={handleCloseAddGroup}
                   sx={{
-                    display: 'flex',
-                    gap: 2,
-                    flexDirection: { xs: 'column', sm: 'row' },
+                    position: 'absolute',
+                    right: 8,
+                    top: 8,
                   }}
                 >
-                  <Box sx={{ flex: 1 }}>
-                    <TextField
-                      autoFocus
-                      margin='dense'
-                      id='site-name'
-                      name='name'
-                      label='站点名称'
-                      type='text'
-                      fullWidth
-                      variant='outlined'
-                      value={newSite.name}
-                      onChange={handleSiteInputChange}
-                    />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <TextField
-                      margin='dense'
-                      id='site-url'
-                      name='url'
-                      label='站点URL'
-                      type='url'
-                      fullWidth
-                      variant='outlined'
-                      value={newSite.url}
-                      onChange={handleSiteInputChange}
-                    />
-                  </Box>
-                </Box>
+                  <CloseIcon />
+                </IconButton>
+              </DialogTitle>
+              <DialogContent>
+                <DialogContentText sx={{ mb: 2 }}>请输入新分组的信息</DialogContentText>
                 <TextField
+                  autoFocus
                   margin='dense'
-                  id='site-icon'
-                  name='icon'
-                  label='图标URL'
-                  type='url'
-                  fullWidth
-                  variant='outlined'
-                  value={newSite.icon}
-                  onChange={handleSiteInputChange}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position='end'>
-                        <IconButton
-                          onClick={() => {
-                            if (!newSite.url) {
-                              handleError('请先输入站点URL');
-                              return;
-                            }
-                            const domain = extractDomain(newSite.url);
-                            if (domain) {
-                              const actualIconApi =
-                                configs['site.iconApi'] ||
-                                'https://www.faviconextractor.com/favicon/{domain}?larger=true';
-                              const iconUrl = actualIconApi.replace('{domain}', domain);
-                              setNewSite({
-                                ...newSite,
-                                icon: iconUrl,
-                              });
-                            } else {
-                              handleError('无法从URL中获取域名');
-                            }
-                          }}
-                          edge='end'
-                          title='自动获取图标'
-                        >
-                          <AutoFixHighIcon />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <TextField
-                  margin='dense'
-                  id='site-description'
-                  name='description'
-                  label='站点描述'
+                  id='group-name'
+                  name='name'
+                  label='分组名称'
                   type='text'
                   fullWidth
                   variant='outlined'
-                  value={newSite.description}
-                  onChange={handleSiteInputChange}
+                  value={newGroup.name}
+                  onChange={handleGroupInputChange}
+                  sx={{ mb: 2 }}
                 />
-                <TextField
-                  margin='dense'
-                  id='site-notes'
-                  name='notes'
-                  label='备注'
-                  type='text'
-                  fullWidth
-                  multiline
-                  rows={2}
-                  variant='outlined'
-                  value={newSite.notes}
-                  onChange={handleSiteInputChange}
-                />
-              </Stack>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 3 }}>
-              <Button onClick={handleCloseAddSite} variant='outlined'>
-                取消
-              </Button>
-              <Button onClick={handleCreateSite} variant='contained' color='primary'>
-                创建
-              </Button>
-            </DialogActions>
-          </Dialog>
+              </DialogContent>
+              <DialogActions sx={{ px: 3, pb: 3 }}>
+                <Button onClick={handleCloseAddGroup} variant='outlined'>
+                  取消
+                </Button>
+                <Button onClick={handleCreateGroup} variant='contained' color='primary'>
+                  创建
+                </Button>
+              </DialogActions>
+            </Dialog>
 
-          {/* 网站配置对话框 */}
-          <Dialog
-            open={openConfig}
-            onClose={handleCloseConfig}
-            maxWidth='sm'
-            fullWidth
-            PaperProps={{
-              sx: {
-                m: { xs: 2, sm: 3, md: 4 },
-                width: { xs: 'calc(100% - 32px)', sm: '80%', md: '70%', lg: '60%' },
-                maxWidth: { sm: '600px' },
-              },
-            }}
-          >
-            <DialogTitle>
-              网站设置
-              <IconButton
-                aria-label='close'
-                onClick={handleCloseConfig}
-                sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText sx={{ mb: 2 }}>配置网站的基本信息和外观</DialogContentText>
-              <Stack spacing={2}>
-                <TextField
-                  margin='dense'
-                  id='site-title'
-                  name='site.title'
-                  label='网站标题 (浏览器标签)'
-                  type='text'
-                  fullWidth
-                  variant='outlined'
-                  value={tempConfigs['site.title']}
-                  onChange={handleConfigInputChange}
-                />
-                <TextField
-                  margin='dense'
-                  id='site-name'
-                  name='site.name'
-                  label='网站名称 (显示在页面中)'
-                  type='text'
-                  fullWidth
-                  variant='outlined'
-                  value={tempConfigs['site.name']}
-                  onChange={handleConfigInputChange}
-                />
-                {/* 获取图标API设置项 */}
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant='subtitle1' gutterBottom>
-                    获取图标API设置
-                  </Typography>
+            {/* 新增站点对话框 */}
+            <Dialog
+              open={openAddSite}
+              onClose={handleCloseAddSite}
+              maxWidth='md'
+              fullWidth
+              PaperProps={{
+                sx: {
+                  m: { xs: 2, sm: 'auto' },
+                  width: { xs: 'calc(100% - 32px)', sm: 'auto' },
+                },
+              }}
+            >
+              <DialogTitle>
+                新增站点
+                <IconButton
+                  aria-label='close'
+                  onClick={handleCloseAddSite}
+                  sx={{
+                    position: 'absolute',
+                    right: 8,
+                    top: 8,
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </DialogTitle>
+              <DialogContent>
+                <DialogContentText sx={{ mb: 2 }}>请输入新站点的信息</DialogContentText>
+                <Stack spacing={2}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      gap: 2,
+                      flexDirection: { xs: 'column', sm: 'row' },
+                    }}
+                  >
+                    <Box sx={{ flex: 1 }}>
+                      <TextField
+                        autoFocus
+                        margin='dense'
+                        id='site-name'
+                        name='name'
+                        label='站点名称'
+                        type='text'
+                        fullWidth
+                        variant='outlined'
+                        value={newSite.name}
+                        onChange={handleSiteInputChange}
+                      />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <TextField
+                        margin='dense'
+                        id='site-url'
+                        name='url'
+                        label='站点URL'
+                        type='url'
+                        fullWidth
+                        variant='outlined'
+                        value={newSite.url}
+                        onChange={handleSiteInputChange}
+                      />
+                    </Box>
+                  </Box>
                   <TextField
                     margin='dense'
-                    id='site-icon-api'
-                    name='site.iconApi'
-                    label='获取图标API URL'
-                    type='text'
-                    fullWidth
-                    variant='outlined'
-                    value={tempConfigs['site.iconApi']}
-                    onChange={handleConfigInputChange}
-                    placeholder='https://example.com/favicon/{domain}'
-                    helperText='输入获取图标API的地址，使用 {domain} 作为域名占位符'
-                  />
-                </Box>
-                {/* 新增背景图片设置 */}
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant='subtitle1' gutterBottom>
-                    背景图片设置
-                  </Typography>
-                  <TextField
-                    margin='dense'
-                    id='site-background-image'
-                    name='site.backgroundImage'
-                    label='背景图片URL'
+                    id='site-icon'
+                    name='icon'
+                    label='图标URL'
                     type='url'
                     fullWidth
                     variant='outlined'
-                    value={tempConfigs['site.backgroundImage']}
-                    onChange={handleConfigInputChange}
-                    placeholder='https://example.com/background.jpg'
-                    helperText='输入图片URL，留空则不使用背景图片'
+                    value={newSite.icon}
+                    onChange={handleSiteInputChange}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position='end'>
+                          <IconButton
+                            onClick={() => {
+                              if (!newSite.url) {
+                                handleError('请先输入站点URL');
+                                return;
+                              }
+                              const domain = extractDomain(newSite.url);
+                              if (domain) {
+                                const actualIconApi =
+                                  configs['site.iconApi'] ||
+                                  'https://www.faviconextractor.com/favicon/{domain}?larger=true';
+                                const iconUrl = actualIconApi.replace('{domain}', domain);
+                                setNewSite({
+                                  ...newSite,
+                                  icon: iconUrl,
+                                });
+                              } else {
+                                handleError('无法从URL中获取域名');
+                              }
+                            }}
+                            edge='end'
+                            title='自动获取图标'
+                          >
+                            <AutoFixHighIcon />
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
                   />
-
-                  <Box sx={{ mt: 2, mb: 1 }}>
-                    <Typography
-                      variant='body2'
-                      color='text.secondary'
-                      id='background-opacity-slider'
-                      gutterBottom
-                    >
-                      背景蒙版透明度: {Number(tempConfigs['site.backgroundOpacity']).toFixed(2)}
-                    </Typography>
-                    <Slider
-                      aria-labelledby='background-opacity-slider'
-                      name='site.backgroundOpacity'
-                      min={0}
-                      max={1}
-                      step={0.01}
-                      valueLabelDisplay='auto'
-                      value={Number(tempConfigs['site.backgroundOpacity'])}
-                      onChange={(_, value) => {
-                        setTempConfigs({
-                          ...tempConfigs,
-                          'site.backgroundOpacity': String(value),
-                        });
-                      }}
-                    />
-                    <Typography variant='caption' color='text.secondary'>
-                      值越大，背景图片越清晰，内容可能越难看清
-                    </Typography>
-                  </Box>
-                </Box>
-                <TextField
-                  margin='dense'
-                  id='site-custom-css'
-                  name='site.customCss'
-                  label='自定义CSS'
-                  type='text'
-                  fullWidth
-                  multiline
-                  rows={6}
-                  variant='outlined'
-                  value={tempConfigs['site.customCss']}
-                  onChange={handleConfigInputChange}
-                  placeholder='/* 自定义样式 */\nbody { }'
-                />
-              </Stack>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 3 }}>
-              <Button onClick={handleCloseConfig} variant='outlined'>
-                取消
-              </Button>
-              <Button onClick={handleSaveConfig} variant='contained' color='primary'>
-                保存设置
-              </Button>
-            </DialogActions>
-          </Dialog>
-
-          {/* 导入数据对话框 */}
-          <Dialog
-            open={openImport}
-            onClose={handleCloseImport}
-            maxWidth='sm'
-            fullWidth
-            PaperProps={{
-              sx: {
-                m: { xs: 2, sm: 'auto' },
-                width: { xs: 'calc(100% - 32px)', sm: 'auto' },
-              },
-            }}
-          >
-            <DialogTitle>
-              导入数据
-              <IconButton
-                aria-label='close'
-                onClick={handleCloseImport}
-                sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText sx={{ mb: 2 }}>
-                请选择要导入的JSON文件，导入将覆盖现有数据。
-              </DialogContentText>
-              <Box sx={{ mb: 2 }}>
-                <Button
-                  variant='outlined'
-                  component='label'
-                  startIcon={<FileUploadIcon />}
-                  sx={{ mb: 2 }}
-                >
-                  选择文件
-                  <input type='file' hidden accept='.json' onChange={handleFileSelect} />
+                  <TextField
+                    margin='dense'
+                    id='site-description'
+                    name='description'
+                    label='站点描述'
+                    type='text'
+                    fullWidth
+                    variant='outlined'
+                    value={newSite.description}
+                    onChange={handleSiteInputChange}
+                  />
+                  <TextField
+                    margin='dense'
+                    id='site-notes'
+                    name='notes'
+                    label='备注'
+                    type='text'
+                    fullWidth
+                    multiline
+                    rows={2}
+                    variant='outlined'
+                    value={newSite.notes}
+                    onChange={handleSiteInputChange}
+                  />
+                </Stack>
+              </DialogContent>
+              <DialogActions sx={{ px: 3, pb: 3 }}>
+                <Button onClick={handleCloseAddSite} variant='outlined'>
+                  取消
                 </Button>
-                {importFile && (
-                  <Typography variant='body2' sx={{ mt: 1 }}>
-                    已选择: {importFile.name}
-                  </Typography>
-                )}
-              </Box>
-              {importError && (
-                <Alert severity='error' sx={{ mb: 2 }}>
-                  {importError}
-                </Alert>
-              )}
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 3 }}>
-              <Button onClick={handleCloseImport} variant='outlined'>
-                取消
-              </Button>
-              <Button
-                onClick={handleImportData}
-                variant='contained'
-                color='primary'
-                disabled={!importFile || importLoading}
-                startIcon={importLoading ? <CircularProgress size={20} /> : <FileUploadIcon />}
-              >
-                {importLoading ? '导入中...' : '导入'}
-              </Button>
-            </DialogActions>
-          </Dialog>
+                <Button onClick={handleCreateSite} variant='contained' color='primary'>
+                  创建
+                </Button>
+              </DialogActions>
+            </Dialog>
 
-          {/* GitHub角标 - 在移动端调整位置 */}
-          <Box
-            sx={{
-              position: 'fixed',
-              bottom: { xs: 8, sm: 16 },
-              right: { xs: 8, sm: 16 },
-              zIndex: 10,
-            }}
-          >
-            <Paper
-              component='a'
-              href='https://github.com/zqq-nuli/Navihive'
-              target='_blank'
-              rel='noopener noreferrer'
-              elevation={2}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                p: 1,
-                borderRadius: 10,
-                bgcolor: 'background.paper',
-                color: 'text.secondary',
-                transition: 'all 0.3s ease-in-out',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                  color: 'text.primary',
-                  boxShadow: 4,
+            {/* 网站配置对话框 */}
+            <Dialog
+              open={openConfig}
+              onClose={handleCloseConfig}
+              maxWidth='sm'
+              fullWidth
+              PaperProps={{
+                sx: {
+                  m: { xs: 2, sm: 3, md: 4 },
+                  width: { xs: 'calc(100% - 32px)', sm: '80%', md: '70%', lg: '60%' },
+                  maxWidth: { sm: '600px' },
                 },
-                textDecoration: 'none',
               }}
             >
-              <GitHubIcon />
-            </Paper>
-          </Box>
+              <DialogTitle>
+                网站设置
+                <IconButton
+                  aria-label='close'
+                  onClick={handleCloseConfig}
+                  sx={{
+                    position: 'absolute',
+                    right: 8,
+                    top: 8,
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </DialogTitle>
+              <DialogContent>
+                <DialogContentText sx={{ mb: 2 }}>配置网站的基本信息和外观</DialogContentText>
+                <Stack spacing={2}>
+                  <TextField
+                    margin='dense'
+                    id='site-title'
+                    name='site.title'
+                    label='网站标题 (浏览器标签)'
+                    type='text'
+                    fullWidth
+                    variant='outlined'
+                    value={tempConfigs['site.title']}
+                    onChange={handleConfigInputChange}
+                  />
+                  <TextField
+                    margin='dense'
+                    id='site-name'
+                    name='site.name'
+                    label='网站名称 (显示在页面中)'
+                    type='text'
+                    fullWidth
+                    variant='outlined'
+                    value={tempConfigs['site.name']}
+                    onChange={handleConfigInputChange}
+                  />
+                  {/* 获取图标API设置项 */}
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant='subtitle1' gutterBottom>
+                      获取图标API设置
+                    </Typography>
+                    <TextField
+                      margin='dense'
+                      id='site-icon-api'
+                      name='site.iconApi'
+                      label='获取图标API URL'
+                      type='text'
+                      fullWidth
+                      variant='outlined'
+                      value={tempConfigs['site.iconApi']}
+                      onChange={handleConfigInputChange}
+                      placeholder='https://example.com/favicon/{domain}'
+                      helperText='输入获取图标API的地址，使用 {domain} 作为域名占位符'
+                    />
+                  </Box>
+                  {/* 新增背景图片设置 */}
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant='subtitle1' gutterBottom>
+                      背景图片设置
+                    </Typography>
+                    <TextField
+                      margin='dense'
+                      id='site-background-image'
+                      name='site.backgroundImage'
+                      label='背景图片URL'
+                      type='url'
+                      fullWidth
+                      variant='outlined'
+                      value={tempConfigs['site.backgroundImage']}
+                      onChange={handleConfigInputChange}
+                      placeholder='https://example.com/background.jpg'
+                      helperText='输入图片URL，留空则不使用背景图片'
+                    />
+
+                    <Box sx={{ mt: 2, mb: 1 }}>
+                      <Typography
+                        variant='body2'
+                        color='text.secondary'
+                        id='background-opacity-slider'
+                        gutterBottom
+                      >
+                        背景蒙版透明度: {Number(tempConfigs['site.backgroundOpacity']).toFixed(2)}
+                      </Typography>
+                      <Slider
+                        aria-labelledby='background-opacity-slider'
+                        name='site.backgroundOpacity'
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        valueLabelDisplay='auto'
+                        value={Number(tempConfigs['site.backgroundOpacity'])}
+                        onChange={(_, value) => {
+                          setTempConfigs({
+                            ...tempConfigs,
+                            'site.backgroundOpacity': String(value),
+                          });
+                        }}
+                      />
+                      <Typography variant='caption' color='text.secondary'>
+                        值越大，背景图片越清晰，内容可能越难看清
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <TextField
+                    margin='dense'
+                    id='site-custom-css'
+                    name='site.customCss'
+                    label='自定义CSS'
+                    type='text'
+                    fullWidth
+                    multiline
+                    rows={6}
+                    variant='outlined'
+                    value={tempConfigs['site.customCss']}
+                    onChange={handleConfigInputChange}
+                    placeholder='/* 自定义样式 */\nbody { }'
+                  />
+                </Stack>
+              </DialogContent>
+              <DialogActions sx={{ px: 3, pb: 3 }}>
+                <Button onClick={handleCloseConfig} variant='outlined'>
+                  取消
+                </Button>
+                <Button onClick={handleSaveConfig} variant='contained' color='primary'>
+                  保存设置
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* 导入数据对话框 */}
+            <Dialog
+              open={openImport}
+              onClose={handleCloseImport}
+              maxWidth='sm'
+              fullWidth
+              PaperProps={{
+                sx: {
+                  m: { xs: 2, sm: 'auto' },
+                  width: { xs: 'calc(100% - 32px)', sm: 'auto' },
+                },
+              }}
+            >
+              <DialogTitle>
+                导入数据
+                <IconButton
+                  aria-label='close'
+                  onClick={handleCloseImport}
+                  sx={{
+                    position: 'absolute',
+                    right: 8,
+                    top: 8,
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </DialogTitle>
+              <DialogContent>
+                <DialogContentText sx={{ mb: 2 }}>
+                  请选择要导入的文件（支持 JSON 备份或 浏览器书签 HTML），导入将覆盖现有数据。
+                </DialogContentText>
+                <Box sx={{ mb: 2 }}>
+                  <Button
+                    variant='outlined'
+                    component='label'
+                    startIcon={<FileUploadIcon />}
+                    sx={{ mb: 2 }}
+                  >
+                    选择文件
+                    <input type='file' hidden accept='.json,.html,.htm' onChange={handleFileSelect} />
+                  </Button>
+                  {importFile && (
+                    <Typography variant='body2' sx={{ mt: 1 }}>
+                      已选择: {importFile.name}
+                    </Typography>
+                  )}
+                </Box>
+                {importError && (
+                  <Alert severity='error' sx={{ mb: 2 }}>
+                    {importError}
+                  </Alert>
+                )}
+              </DialogContent>
+              <DialogActions sx={{ px: 3, pb: 3 }}>
+                <Button onClick={handleCloseImport} variant='outlined'>
+                  取消
+                </Button>
+                <Button
+                  onClick={handleImportData}
+                  variant='contained'
+                  color='primary'
+                  disabled={!importFile || importLoading}
+                  startIcon={importLoading ? <CircularProgress size={20} /> : <FileUploadIcon />}
+                >
+                  {importLoading ? '导入中...' : '导入'}
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* GitHub角标 - 在移动端调整位置 */}
+            <Box
+              sx={{
+                position: 'fixed',
+                bottom: { xs: 8, sm: 16 },
+                right: { xs: 8, sm: 16 },
+                zIndex: 10,
+              }}
+            >
+              <Paper
+                component='a'
+                href='https://github.com/zqq-nuli/Navihive'
+                target='_blank'
+                rel='noopener noreferrer'
+                elevation={2}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  p: 1,
+                  borderRadius: 10,
+                  bgcolor: 'background.paper',
+                  color: 'text.secondary',
+                  transition: 'all 0.3s ease-in-out',
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                    color: 'text.primary',
+                    boxShadow: 4,
+                  },
+                  textDecoration: 'none',
+                }}
+              >
+                <GitHubIcon />
+              </Paper>
+            </Box>
         </Container>
       </Box>
     </ThemeProvider>

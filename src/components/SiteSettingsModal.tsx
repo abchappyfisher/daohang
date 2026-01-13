@@ -1,6 +1,7 @@
 // src/components/SiteSettingsModal.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Site, Group } from '../API/http';
+import { api } from '../API/instance';
 // Material UI 导入
 import {
   Dialog,
@@ -22,10 +23,17 @@ import {
   useTheme,
   SelectChangeEvent,
   InputAdornment,
+  DialogContentText,
+  Slider,
+  CircularProgress,
+  Chip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 
@@ -68,7 +76,7 @@ export default function SiteSettingsModal({
   const theme = useTheme();
 
   // 存储字符串形式的group_id，与Material-UI的Select兼容
-  const [formData, setFormData] = useState({
+  const [tempSite, setTempSite] = useState({
     name: site.name,
     url: site.url,
     icon: site.icon || '',
@@ -79,16 +87,41 @@ export default function SiteSettingsModal({
 
   // 用于预览图标
   const [iconPreview, setIconPreview] = useState<string | null>(site.icon || null);
+  const [loading, setLoading] = useState(false);
+  const [checkingUrl, setCheckingUrl] = useState(false);
+  const [urlStatus, setUrlStatus] = useState<{ ok: boolean; status?: number; error?: string } | null>(null);
+
+  useEffect(() => {
+    setTempSite({ ...site });
+    setUrlStatus(null);
+  }, [site]);
 
   // 处理表单字段变化
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setTempSite((prev) => ({ ...prev, [name]: value }));
+    if (name === 'url') {
+      setUrlStatus(null);
+    }
+  };
+
+  const handleCheckUrl = async () => {
+    if (!tempSite.url) return;
+    try {
+      setCheckingUrl(true);
+      const result = await api.checkUrl(tempSite.url);
+      setUrlStatus(result);
+    } catch (error) {
+      console.error('Check failed', error);
+      setUrlStatus({ ok: false, error: '检查失败' });
+    } finally {
+      setCheckingUrl(false);
+    }
   };
 
   // 处理下拉列表变化
   const handleSelectChange = (e: SelectChangeEvent) => {
-    setFormData((prev) => ({
+    setTempSite((prev) => ({
       ...prev,
       group_id: e.target.value,
     }));
@@ -97,7 +130,7 @@ export default function SiteSettingsModal({
   // 处理图标上传或URL输入
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    setFormData((prev) => ({ ...prev, icon: value }));
+    setTempSite((prev) => ({ ...prev, icon: value }));
 
     // 检查URL是否是有效的图片URL
     const isValidImageUrl = (url: string): boolean => {
@@ -136,8 +169,8 @@ export default function SiteSettingsModal({
     // 更新网站信息，将group_id转为数字
     onUpdate({
       ...site,
-      ...formData,
-      group_id: Number(formData.group_id),
+      ...tempSite,
+      group_id: Number(tempSite.group_id),
     });
 
     onClose();
@@ -153,7 +186,7 @@ export default function SiteSettingsModal({
   };
 
   // 计算首字母图标
-  const fallbackIcon = formData.name?.charAt(0).toUpperCase() || 'A';
+  const fallbackIcon = tempSite.name?.charAt(0).toUpperCase() || 'A';
 
   return (
     <Dialog
@@ -197,7 +230,7 @@ export default function SiteSettingsModal({
               label='网站名称'
               required
               fullWidth
-              value={formData.name || ''}
+              value={tempSite.name || ''}
               onChange={handleChange}
               placeholder='输入网站名称'
               variant='outlined'
@@ -211,13 +244,36 @@ export default function SiteSettingsModal({
               label='网站链接'
               required
               fullWidth
-              value={formData.url || ''}
+              value={tempSite.url || ''}
               onChange={handleChange}
               placeholder='https://example.com'
               variant='outlined'
               size='small'
               type='url'
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position='end'>
+                    <IconButton
+                      onClick={handleCheckUrl}
+                      disabled={checkingUrl || !tempSite.url}
+                      size="small"
+                      title="检查链接健康状态"
+                    >
+                      {checkingUrl ? <CircularProgress size={20} /> : <NetworkCheckIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
             />
+            {urlStatus && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: -1, mb: 1 }}>
+                {urlStatus.ok ? (
+                  <Chip icon={<CheckCircleIcon />} label={`访问正常 (${urlStatus.status})`} color="success" size="small" variant="outlined" />
+                ) : (
+                  <Chip icon={<ErrorIcon />} label={`访问异常: ${urlStatus.error || urlStatus.status}`} color="error" size="small" variant="outlined" />
+                )}
+              </Box>
+            )}
 
             {/* 网站图标 */}
             <Box>
@@ -228,7 +284,7 @@ export default function SiteSettingsModal({
                 {iconPreview ? (
                   <Avatar
                     src={iconPreview}
-                    alt={formData.name || 'Icon Preview'}
+                    alt={tempSite.name || 'Icon Preview'}
                     sx={{ width: 40, height: 40, borderRadius: 1.5 }}
                     imgProps={{
                       onError: handleIconError,
@@ -257,7 +313,7 @@ export default function SiteSettingsModal({
                   id='icon'
                   name='icon'
                   fullWidth
-                  value={formData.icon || ''}
+                  value={tempSite.icon || ''}
                   onChange={handleIconChange}
                   placeholder='https://example.com/icon.png'
                   variant='outlined'
@@ -267,17 +323,17 @@ export default function SiteSettingsModal({
                       <InputAdornment position='end'>
                         <IconButton
                           onClick={() => {
-                            if (!formData.url) {
+                            if (!tempSite.url) {
                               // handleError("请先输入站点URL");
                               return;
                             }
-                            const domain = extractDomain(formData.url);
+                            const domain = extractDomain(tempSite.url);
                             if (domain) {
                               const actualIconApi =
                                 iconApi ||
                                 'https://www.faviconextractor.com/favicon/{domain}?larger=true';
                               const iconUrl = actualIconApi.replace('{domain}', domain);
-                              setFormData((prev) => ({
+                              setTempSite((prev) => ({
                                 ...prev,
                                 icon: iconUrl,
                               }));
@@ -306,7 +362,7 @@ export default function SiteSettingsModal({
                   labelId='group-select-label'
                   id='group_id'
                   name='group_id'
-                  value={formData.group_id}
+                  value={tempSite.group_id}
                   label='所属分组'
                   onChange={handleSelectChange}
                 >
@@ -327,7 +383,7 @@ export default function SiteSettingsModal({
               multiline
               rows={2}
               fullWidth
-              value={formData.description || ''}
+              value={tempSite.description || ''}
               onChange={handleChange}
               placeholder='简短的网站描述'
               variant='outlined'
@@ -342,7 +398,7 @@ export default function SiteSettingsModal({
               multiline
               rows={3}
               fullWidth
-              value={formData.notes || ''}
+              value={tempSite.notes || ''}
               onChange={handleChange}
               placeholder='可选的私人备注'
               variant='outlined'

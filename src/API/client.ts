@@ -245,5 +245,11 @@ export class NavigationClient {
       body: JSON.stringify(data),
     });
     return response;
+    return response;
+  }
+
+  // 检查URL
+  async checkUrl(url: string): Promise<{ ok: boolean; status?: number; error?: string }> {
+    return this.request(`check-url?url=${encodeURIComponent(url)}`);
   }
 }
