@@ -1,0 +1,57 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ *
+ * ⚠️ 安全警告：
+ * 1. 不要在 Git 仓库中存储敏感信息（密码、密钥等）
+ * 2. 使用 `wrangler secret` 命令设置敏感信息
+ * 3. 本文件中的示例值仅供开发测试，生产环境必须更改
+ *
+ * 设置安全凭证的步骤：
+ * 1. 生成强随机密钥（至少 32 字节）：
+ *    - Node.js: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+ *    - Python: python3 -c "import secrets; print(secrets.token_hex(32))"
+ *    - OpenSSL: openssl rand -hex 32
+ *
+ * 2. 生成密码哈希（SHA-256）：
+ *    访问 https://www.sha256generator.com/ 或使用命令行工具
+ *
+ * 3. 使用 wrangler secret 命令设置：
+ *    wrangler secret put AUTH_SECRET
+ *    wrangler secret put AUTH_PASSWORD_HASH
+ *    wrangler secret put AUTH_USERNAME
+ *
+ * 4. 设置 AUTH_ENABLED:
+ *    wrangler secret put AUTH_ENABLED  (输入 "true" 或 "false")
+ */
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "navihive",
+    "main": "worker/index.ts",
+    "compatibility_date": "2025-04-05",
+    "assets": {
+        "not_found_handling": "single-page-application"
+    },
+    "observability": {
+        "enabled": true
+    },
+    // D1数据库绑定
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "navigation-db-local",
+            "database_id": "43ff28e1-42d6-4e53-9657-0702ae1353b6"
+        }
+    ],
+    // 注意：以下环境变量仅供开发测试使用
+    // 生产环境必须使用 `wrangler secret` 命令设置
+    "vars": {
+        "AUTH_ENABLED": "true",
+        "AUTH_USERNAME": "admin",
+        // 以下值仅为示例，生产环境必须使用 wrangler secret 设置
+        // AUTH_PASSWORD_HASH: "密码的 SHA-256 哈希值"
+        // AUTH_SECRET: "至少32字节的强随机密钥"
+        "AUTH_PASSWORD_HASH": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+        "AUTH_SECRET": "d4c6a2f8e1b9d3a7c5e2f1b4d6a8c9e0f3a5b7d2c1e4f6a8b0c9d2e5f7a9b1c3d5e7f9a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3"
+    }
+}

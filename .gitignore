@@ -1,0 +1,52 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# wrangler files
+.wrangler
+.dev.vars*
+.dev.vars.local
+.wrangler.state.v3
+.wrangler.toml
+
+# 敏感信息文件（不应提交到版本控制）
+.env
+.env.local
+.env.production.local
+.env.development.local
+*.pem
+*.key
+*.crt
+
+# Cloudflare 相关
+# 注意：wrangler.jsonc 是配置文件，可以提交（但不包含真实密钥）
+# 如果在 wrangler.jsonc 中添加了真实的密钥，应该：
+# 1. 移除真实密钥，使用占位符或示例值
+# 2. 使用 wrangler secret 命令存储敏感信息
+
+# 临时文件
+.cache
+.temp
+tmp
+temp
